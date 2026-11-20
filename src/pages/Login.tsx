@@ -6,13 +6,11 @@ import TinyTitansIcon from "../components/TinyTitansIcon";
 import { loginWithEmail, loginWithGoogle, registerWithEmail } from "../firebase/auth";
 import "../styles/Auth.css";
 import logo from "../assets/TinyTitans-Logo.jpg";
-
 function getRedirectDestination(search: string): string {
   const redirect = new URLSearchParams(search).get("redirect");
   if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//") || redirect === "/login") return "/";
   return redirect;
 }
-
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,7 +21,6 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -32,10 +29,9 @@ function Login() {
     });
     return unsubscribe;
   }, [location.search, navigate]);
-
   function getFirebaseError(firebaseError: unknown): string {
     if (typeof firebaseError !== "object" || firebaseError === null || !("code" in firebaseError)) return "Something went wrong. Please try again.";
-    const code = (firebaseError as { code: string }).code;
+    const code = String((firebaseError as { code: unknown }).code || "unknown");
     switch (code) {
       case "auth/invalid-email": return "Please enter a valid email address.";
       case "auth/user-not-found": return "No Tiny Titans account was found with that email.";
@@ -44,14 +40,17 @@ function Login() {
       case "auth/email-already-in-use": return "An account already exists with this email address.";
       case "auth/weak-password": return "Your password needs to be at least 6 characters.";
       case "auth/popup-closed-by-user": return "Google sign-in was cancelled.";
-      case "auth/popup-blocked": return "Your browser blocked the Google sign-in window.";
+      case "auth/popup-blocked": return "Your browser blocked the Google sign-in window. Allow pop-ups and try again.";
+      case "auth/cancelled-popup-request": return "A Google sign-in window is already open. Complete it or close it and try again.";
+      case "auth/unauthorized-domain": return "Google sign-in is not authorised for this Tiny Titans domain. Please contact support.";
+      case "auth/operation-not-allowed": return "Google sign-in is currently disabled for Tiny Titans. Please contact support.";
+      case "auth/web-storage-unsupported": return "This browser is blocking the storage required to sign in. Try a normal browser tab instead of private mode.";
       case "auth/network-request-failed": return "Network error. Please check your internet connection.";
       case "auth/too-many-requests": return "Too many attempts were made. Please wait a moment and try again.";
       case "auth/user-disabled": return "This Tiny Titans account has been disabled.";
-      default: return "Unable to complete that request. Please try again.";
+      default: return `Sign-in failed (${code}). Please try again; if it persists, send this error code to Tiny Titans support.`;
     }
   }
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError("");
     if (!email.trim()) { setError("Please enter your email address."); return; }
@@ -66,15 +65,12 @@ function Login() {
       setError(getFirebaseError(firebaseError)); setLoading(false);
     }
   }
-
   async function handleGoogleLogin() {
     setError(""); setLoading(true);
     try { await loginWithGoogle(); }
     catch (firebaseError) { console.error("Tiny Titans Google authentication error:", firebaseError); setError(getFirebaseError(firebaseError)); setLoading(false); }
   }
-
   function switchMode() { setIsRegistering((previous) => !previous); setError(""); setPassword(""); }
-
   return (
     <main className="auth-page">
       <div className="auth-background-glow" />
@@ -98,5 +94,4 @@ function Login() {
     </main>
   );
 }
-
 export default Login;
