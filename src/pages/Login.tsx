@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAuth, getRedirectResult, onAuthStateChanged } from "firebase/auth";
 import { useLocation, useNavigate } from "react-router-dom";
 import TinyTitansIcon from "../components/TinyTitansIcon";
 
@@ -23,6 +23,11 @@ function Login() {
   const [error, setError] = useState("");
   useEffect(() => {
     const auth = getAuth();
+    void getRedirectResult(auth).catch((redirectError) => {
+      console.error("Tiny Titans Google redirect authentication error:", redirectError);
+      setError(getFirebaseError(redirectError));
+      setLoading(false);
+    });
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (!firebaseUser) return;
       navigate(getRedirectDestination(location.search), { replace: true });
