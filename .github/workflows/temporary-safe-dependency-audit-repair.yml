@@ -1,0 +1,35 @@
+name: Temporary safe dependency audit repair
+on:
+  push:
+    branches:
+      - chore/safe-dependency-audit-fix
+    paths:
+      - .github/workflows/temporary-safe-dependency-audit-repair.yml
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chore/safe-dependency-audit-fix
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Apply non-breaking audit fixes only
+        run: npm audit fix
+      - name: Commit lockfile changes
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "No lockfile changes produced by safe npm audit fix."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "fix(deps): apply non-breaking security updates"
+          git push origin HEAD:chore/safe-dependency-audit-fix
