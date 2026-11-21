@@ -5,6 +5,7 @@ on:
       - chore/safe-dependency-audit-fix
     paths:
       - .github/workflows/temporary-safe-dependency-audit-repair.yml
+      - package.json
 permissions:
   contents: write
 jobs:
