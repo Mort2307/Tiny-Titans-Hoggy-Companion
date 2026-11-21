@@ -3,6 +3,7 @@ import {
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   updateProfile,
   type User,
@@ -11,193 +12,47 @@ import {
 import { auth } from "./config";
 
 const googleProvider = new GoogleAuthProvider();
-
-/* =========================================================
-   REGISTER WITH EMAIL
-   ========================================================= */
+googleProvider.setCustomParameters({ prompt: "select_account" });
 
 export async function registerWithEmail(
   email: string,
   password: string,
   displayName: string
 ): Promise<User> {
+  const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  const name = displayName.trim();
+  if (name) await updateProfile(credential.user, { displayName: name });
+  return credential.user;
+}
+
+export async function loginWithEmail(email: string, password: string): Promise<User> {
+  const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+  return credential.user;
+}
+
+/**
+ * Google popup sign-in with redirect fallback when the browser blocks popups.
+ * Redirect flow returns no user immediately; Firebase completes it on the next page load.
+ */
+export async function loginWithGoogle(): Promise<User | null> {
   try {
-    const credential =
-      await createUserWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      );
-
-    if (displayName.trim()) {
-      await updateProfile(
-        credential.user,
-        {
-          displayName:
-            displayName.trim(),
-        }
-      );
-    }
-
-    console.log(
-      "Tiny Titans: REGISTRATION SUCCESSFUL",
-      credential.user.uid
-    );
-
+    const credential = await signInWithPopup(auth, googleProvider);
     return credential.user;
-
   } catch (error) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String((error as { code: unknown }).code)
+        : "";
+    console.error("Tiny Titans: Google popup sign-in failed", { code, error });
 
-    console.error(
-      "Tiny Titans: REGISTRATION FAILED",
-      error
-    );
-
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error
-    ) {
-      console.error(
-        "Tiny Titans: Firebase error code:",
-        (error as { code: string }).code
-      );
+    if (code === "auth/popup-blocked") {
+      await signInWithRedirect(auth, googleProvider);
+      return null;
     }
-
-    if (error instanceof Error) {
-      console.error(
-        "Tiny Titans: Firebase error message:",
-        error.message
-      );
-    }
-
     throw error;
   }
 }
-
-/* =========================================================
-   LOGIN WITH EMAIL
-   ========================================================= */
-
-export async function loginWithEmail(
-  email: string,
-  password: string
-): Promise<User> {
-
-  try {
-
-    console.log(
-      "Tiny Titans: attempting email login:",
-      email.trim()
-    );
-
-    const credential =
-      await signInWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      );
-
-    console.log(
-      "Tiny Titans: EMAIL LOGIN SUCCESSFUL",
-      credential.user.uid
-    );
-
-    return credential.user;
-
-  } catch (error) {
-
-    console.error(
-      "========================================"
-    );
-
-    console.error(
-      "Tiny Titans: EMAIL LOGIN FAILED"
-    );
-
-    console.error(
-      "========================================"
-    );
-
-    console.error(
-      "Raw Firebase error:",
-      error
-    );
-
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error
-    ) {
-      console.error(
-        "Tiny Titans: Firebase error code:",
-        (error as { code: string }).code
-      );
-    }
-
-    if (error instanceof Error) {
-      console.error(
-        "Tiny Titans: Firebase error message:",
-        error.message
-      );
-    }
-
-    throw error;
-  }
-}
-
-/* =========================================================
-   LOGIN WITH GOOGLE
-   ========================================================= */
-
-export async function loginWithGoogle(): Promise<User> {
-
-  try {
-
-    const credential =
-      await signInWithPopup(
-        auth,
-        googleProvider
-      );
-
-    console.log(
-      "Tiny Titans: GOOGLE LOGIN SUCCESSFUL",
-      credential.user.uid
-    );
-
-    return credential.user;
-
-  } catch (error) {
-
-    console.error(
-      "Tiny Titans: GOOGLE LOGIN FAILED",
-      error
-    );
-
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error
-    ) {
-      console.error(
-        "Tiny Titans: Firebase error code:",
-        (error as { code: string }).code
-      );
-    }
-
-    throw error;
-  }
-}
-
-/* =========================================================
-   LOGOUT
-   ========================================================= */
 
 export async function logout(): Promise<void> {
-
   await signOut(auth);
-
-  console.log(
-    "Tiny Titans: LOGGED OUT"
-  );
 }
