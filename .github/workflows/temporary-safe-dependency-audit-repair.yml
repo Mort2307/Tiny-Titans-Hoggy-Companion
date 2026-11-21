@@ -19,6 +19,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Reconcile lockfile with safe scoped overrides
+        run: npm install --package-lock-only --ignore-scripts
       - name: Install locked dependencies
         run: npm ci
       - name: Apply non-breaking audit fixes only
