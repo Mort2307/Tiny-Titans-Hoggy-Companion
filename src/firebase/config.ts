@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   browserLocalPersistence,
+  browserPopupRedirectResolver,
   indexedDBLocalPersistence,
   initializeAuth,
 } from "firebase/auth";
@@ -42,6 +43,10 @@ const auth = initializeAuth(app, {
   // Keep signed-in users signed in across normal reloads, PWA refreshes and
   // browser restarts. IndexedDB is preferred, with localStorage as a fallback.
   persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+  // Required when initialiseAuth is used manually and the app uses Google
+  // popup/redirect sign-in. Without this resolver Firebase can reject the
+  // provider flow with auth/argument-error.
+  popupRedirectResolver: browserPopupRedirectResolver,
 });
 const db = getFirestore(app);
 const storage = getStorage(app);
